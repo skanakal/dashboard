@@ -22,6 +22,11 @@ import { STATE, NAME, AGE, NAMESPACE } from '@shell/config/table-headers';
 import { LVM_DRIVER } from '../models/harvester/storage.k8s.io.storageclass';
 import { DATA_ENGINE_V2 } from '../models/harvester/persistentvolumeclaim';
 
+const FILESYSTEM_RWO_PROVISIONERS = [
+  'csi.trident.netapp.io',
+  'disk.csi.everest.io',
+];
+
 export default {
   name: 'HarvesterVolume',
 
@@ -235,7 +240,11 @@ export default {
       let readWriteOnce = this.value.isLvm || this.value.isLonghornV2;
 
       if (storageClass) {
-        readWriteOnce = storageClass.provisioner === LVM_DRIVER || storageClass.parameters?.dataEngine === DATA_ENGINE_V2;
+        readWriteOnce = storageClass.provisioner === LVM_DRIVER || storageClass.parameters?.dataEngine === DATA_ENGINE_V2 ||
+        (
+          this.value.spec.volumeMode === 'Filesystem' &&
+        FILESYSTEM_RWO_PROVISIONERS.includes(storageClass.provisioner)
+        );
       }
 
       return readWriteOnce ? ['ReadWriteOnce'] : ['ReadWriteMany'];
